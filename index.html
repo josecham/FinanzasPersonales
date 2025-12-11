@@ -4,72 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mis Finanzas PWA</title>
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1e293b">
-
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
     <style>
-        /* Ajustes para evitar rebote en iOS y scroll suave */
         body { overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen w-screen overflow-hidden font-sans">
-
     <div id="root"></div>
-
     <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        // --- Componentes ---
-
-        const CardBalance = ({ income, expense }) => {
-            const total = income - expense;
+        const { useState, useEffect, createContext, useContext } = React;
+        const CtxLng = createContext();
+        const TRNS = {
+            es: { a: "Mis Finanzas", b: "Saldo Total", c: "Ingresos", d: "Gastos", e: "Nueva Transacción", f: "Tipo", g: "Monto", h: "Concepto", i: "Ej: Supermercado", j: "Cancelar", k: "Guardar", l: "Movimientos", m: "registrados", n: "No hay movimientos aún", o: "Ingreso", p: "Gasto", },
+            en: { a: "My Finances", b: "Total Balance", c: "Income", d: "Expense", e: "New Transaction", f: "Type", g: "Amount", h: "Concept", i: "Ex: Supermarket", j: "Cancel", k: "Save", l: "Movements", m: "registered", n: "No movements yet", o: "Income", p: "Expense", },
+        };
+        const useLng = () => {
+            const ctx = useContext(CtxLng);
+            if (!ctx) { throw new Error('useLng must be used within a CtxLng Provider'); }
+            const { lng, setLng } = ctx;
+            return { TR: TRNS[lng] || TRNS.es, lng, setLng, };
+        };
+        const CmbLng = () => {
+            const { lng, setLng } = useLng();
+            return (
+                <select
+                    value={lng}
+                    onChange={(e) => setLng(e.target.value)}
+                    className="bg-slate-100 text-slate-600 font-bold rounded-full py-1 px-3 text-sm focus:ring-2 ring-blue-500/20 outline-none"
+                >
+                    <option value="es">ES</option>
+                    <option value="en">EN</option>
+                </select>
+            );
+        };
+        const CrdBal = ({ inc, exp }) => {
+            const { TR } = useLng();
+            const ttl = inc - exp;
             return (
                 <div className="bg-slate-800 text-white p-6 rounded-3xl shadow-lg mb-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-blue-500 rounded-full opacity-20 blur-xl"></div>
-                    <p className="text-slate-400 text-sm font-medium mb-1">Saldo Total</p>
-                    <h1 className="text-4xl font-bold mb-6">${total.toLocaleString('es-AR')}</h1>
-                    
+                    <p className="text-slate-400 text-sm font-medium mb-1">{TR.b}</p>
+                    <h1 className="text-4xl font-bold mb-6">${ttl.toLocaleString('es-AR')}</h1>
                     <div className="flex justify-between items-center">
                         <div>
                             <div className="flex items-center gap-1 text-emerald-400 mb-1">
                                 <i className="ph-fill ph-arrow-circle-down text-lg"></i>
-                                <span className="text-xs font-bold uppercase tracking-wider">Ingresos</span>
+                                <span className="text-xs font-bold uppercase tracking-wider">{TR.c}</span>
                             </div>
-                            <p className="font-semibold text-lg">${income.toLocaleString('es-AR')}</p>
+                            <p className="font-semibold text-lg">${inc.toLocaleString('es-AR')}</p>
                         </div>
                         <div className="w-px h-8 bg-slate-600"></div>
                         <div className="text-right">
                             <div className="flex items-center justify-end gap-1 text-rose-400 mb-1">
-                                <span className="text-xs font-bold uppercase tracking-wider">Gastos</span>
+                                <span className="text-xs font-bold uppercase tracking-wider">{TR.d}</span>
                                 <i className="ph-fill ph-arrow-circle-up text-lg"></i>
                             </div>
-                            <p className="font-semibold text-lg">${expense.toLocaleString('es-AR')}</p>
+                            <p className="font-semibold text-lg">${exp.toLocaleString('es-AR')}</p>
                         </div>
                     </div>
                 </div>
             );
         };
-
-        const TransactionItem = ({ item, onDelete }) => {
-            const isIncome = item.type === 'ingreso';
+        const ItemTx = ({ item, onDelete }) => {
+            const isInc = item.type === 'ingreso';
             return (
                 <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm mb-3 border border-slate-100">
                     <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isIncome ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                            <i className={`ph-fill ${isIncome ? 'ph-money' : 'ph-shopping-cart'} text-xl`}></i>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isInc ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                            <i className={`ph-fill ${isInc ? 'ph-money' : 'ph-shopping-cart'} text-xl`}></i>
                         </div>
                         <div>
                             <p className="font-bold text-slate-700">{item.category}</p>
@@ -77,8 +88,8 @@
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <span className={`font-bold ${isIncome ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {isIncome ? '+' : '-'}${parseFloat(item.amount).toLocaleString('es-AR')}
+                        <span className={`font-bold ${isInc ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {isInc ? '+' : '-'}${parseFloat(item.amount).toLocaleString('es-AR')}
                         </span>
                         <button onClick={() => onDelete(item.id)} className="text-slate-300 hover:text-rose-500 transition-colors">
                             <i className="ph ph-trash text-lg"></i>
@@ -87,131 +98,117 @@
                 </div>
             );
         };
-
-        const AddModal = ({ isOpen, onClose, onAdd }) => {
+        const MDLAdd = ({ isOpen, onClose, onAdd }) => {
+            const { TR } = useLng();
             if (!isOpen) return null;
-            const [amount, setAmount] = useState('');
-            const [category, setCategory] = useState('');
-            const [type, setType] = useState('gasto');
-
-            const handleSubmit = (e) => {
+            const [mnt, setMnt] = useState('');
+            const [cat, setCat] = useState('');
+            const [tp, setTp] = useState('gasto');
+            const hdlSubmit = (e) => {
                 e.preventDefault();
-                if (!amount || !category) return;
-                onAdd({ amount: parseFloat(amount), category, type });
-                setAmount(''); setCategory(''); onClose();
+                if (!mnt || !cat) return;
+                onAdd({ amount: parseFloat(mnt), category: cat, type: tp });
+                setMnt(''); setCat(''); onClose();
             };
-
             return (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-[slideUp_0.3s_ease-out]">
-                        <h2 className="text-xl font-bold mb-4 text-slate-800">Nueva Transacción</h2>
-                        
+                        <h2 className="text-xl font-bold mb-4 text-slate-800">{TR.e}</h2>
                         <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
-                            <button onClick={() => setType('ingreso')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${type === 'ingreso' ? 'bg-white shadow text-emerald-600' : 'text-slate-500'}`}>Ingreso</button>
-                            <button onClick={() => setType('gasto')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${type === 'gasto' ? 'bg-white shadow text-rose-600' : 'text-slate-500'}`}>Gasto</button>
+                            <button onClick={() => setTp('ingreso')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${tp === 'ingreso' ? 'bg-white shadow text-emerald-600' : 'text-slate-500'}`}>{TR.o}</button>
+                            <button onClick={() => setTp('gasto')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${tp === 'gasto' ? 'bg-white shadow text-rose-600' : 'text-slate-500'}`}>{TR.p}</button>
                         </div>
-
-                        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                        <form onSubmit={hdlSubmit} className="flex flex-col gap-4">
                             <div>
-                                <label className="text-xs text-slate-500 font-bold ml-2">Monto</label>
-                                <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className="w-full bg-slate-50 p-4 rounded-xl text-2xl font-bold outline-none focus:ring-2 ring-blue-500/20" autoFocus />
+                                <label className="text-xs text-slate-500 font-bold ml-2">{TR.g}</label>
+                                <input type="number" value={mnt} onChange={e => setMnt(e.target.value)} placeholder="0.00" className="w-full bg-slate-50 p-4 rounded-xl text-2xl font-bold outline-none focus:ring-2 ring-blue-500/20" autoFocus />
                             </div>
                             <div>
-                                <label className="text-xs text-slate-500 font-bold ml-2">Concepto</label>
-                                <input type="text" value={category} onChange={e => setCategory(e.target.value)} placeholder="Ej: Supermercado" className="w-full bg-slate-50 p-4 rounded-xl font-medium outline-none focus:ring-2 ring-blue-500/20" />
+                                <label className="text-xs text-slate-500 font-bold ml-2">{TR.h}</label>
+                                <input type="text" value={cat} onChange={e => setCat(e.target.value)} placeholder={TR.i} className="w-full bg-slate-50 p-4 rounded-xl font-medium outline-none focus:ring-2 ring-blue-500/20" />
                             </div>
-                            
                             <div className="flex gap-3 mt-4">
-                                <button type="button" onClick={onClose} className="flex-1 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl">Cancelar</button>
-                                <button type="submit" className="flex-1 py-4 bg-slate-800 text-white font-bold rounded-xl shadow-lg shadow-slate-800/20 active:scale-95 transition-transform">Guardar</button>
+                                <button type="button" onClick={onClose} className="flex-1 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl">{TR.j}</button>
+                                <button type="submit" className="flex-1 py-4 bg-slate-800 text-white font-bold rounded-xl shadow-lg shadow-slate-800/20 active:scale-95 transition-transform">{TR.k}</button>
                             </div>
                         </form>
                     </div>
                 </div>
             );
         };
-
-        // --- App Principal ---
-
-        const App = () => {
-            // Estado inicial cargando desde LocalStorage
-            const [transactions, setTransactions] = useState(() => {
-                const saved = localStorage.getItem('financeApp_data');
-                return saved ? JSON.parse(saved) : [];
+        const MainApp = () => {
+            const { TR } = useLng();
+            const [txs, setTxs] = useState(() => {
+                const svd = localStorage.getItem('financeApp_data');
+                return svd ? JSON.parse(svd) : [];
             });
-            const [isModalOpen, setIsModalOpen] = useState(false);
-
-            // Guardar en LocalStorage cada vez que cambian las transacciones
+            const [isMdl, setIsMdl] = useState(false);
             useEffect(() => {
-                localStorage.setItem('financeApp_data', JSON.stringify(transactions));
-            }, [transactions]);
-
-            const addTransaction = (data) => {
+                localStorage.setItem('financeApp_data', JSON.stringify(txs));
+            }, [txs]);
+            const addTx = (data) => {
                 const newTx = { ...data, id: Date.now(), date: new Date().toISOString() };
-                setTransactions([newTx, ...transactions]);
+                setTxs([newTx, ...txs]);
             };
-
-            const deleteTransaction = (id) => {
-                setTransactions(transactions.filter(t => t.id !== id));
+            const delTx = (id) => {
+                setTxs(txs.filter(t => t.id !== id));
             };
-
-            const totalIncome = transactions.filter(t => t.type === 'ingreso').reduce((acc, curr) => acc + curr.amount, 0);
-            const totalExpense = transactions.filter(t => t.type === 'gasto').reduce((acc, curr) => acc + curr.amount, 0);
-
+            const incTtl = txs.filter(t => t.type === 'ingreso').reduce((acc, curr) => acc + curr.amount, 0);
+            const expTtl = txs.filter(t => t.type === 'gasto').reduce((acc, curr) => acc + curr.amount, 0);
             return (
                 <div className="h-full max-w-md mx-auto bg-white sm:border-x sm:border-slate-200 relative flex flex-col">
-                    
-                    {/* Header */}
                     <header className="p-6 pb-2">
                         <div className="flex justify-between items-center mb-6">
-                            <h1 className="text-2xl font-black text-slate-800">Mis Finanzas</h1>
-                            <button className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
-                                <i className="ph-fill ph-user"></i>
-                            </button>
+                            <h1 className="text-2xl font-black text-slate-800">{TR.a}</h1>
+                            <CmbLng />
                         </div>
-                        <CardBalance income={totalIncome} expense={totalExpense} />
+                        <CrdBal inc={incTtl} exp={expTtl} />
                     </header>
-
-                    {/* Lista de Movimientos */}
                     <div className="flex-1 overflow-y-auto px-6 pb-24 hide-scrollbar">
                         <div className="flex justify-between items-end mb-4">
-                            <h3 className="font-bold text-slate-700 text-lg">Movimientos</h3>
-                            <span className="text-xs text-slate-400 font-medium">{transactions.length} registrados</span>
+                            <h3 className="font-bold text-slate-700 text-lg">{TR.l}</h3>
+                            <span className="text-xs text-slate-400 font-medium">{txs.length} {TR.m}</span>
                         </div>
-                        
-                        {transactions.length === 0 ? (
+                        {txs.length === 0 ? (
                             <div className="text-center py-10 opacity-50">
                                 <i className="ph ph-receipt text-4xl mb-2 text-slate-300"></i>
-                                <p className="text-slate-400">No hay movimientos aún</p>
+                                <p className="text-slate-400">{TR.n}</p>
                             </div>
                         ) : (
-                            transactions.map(tx => (
-                                <TransactionItem key={tx.id} item={tx} onDelete={deleteTransaction} />
+                            txs.map(tx => (
+                                <ItemTx key={tx.id} item={tx} onDelete={delTx} />
                             ))
                         )}
                     </div>
-
-                    {/* Botón Flotante (FAB) */}
                     <div className="absolute bottom-6 right-6 z-10">
                         <button 
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => setIsMdl(true)}
                             className="w-16 h-16 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-600/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
                         >
                             <i className="ph ph-plus text-3xl font-bold"></i>
                         </button>
                     </div>
-
-                    <AddModal 
-                        isOpen={isModalOpen} 
-                        onClose={() => setIsModalOpen(false)} 
-                        onAdd={addTransaction} 
+                    <MDLAdd 
+                        isOpen={isMdl} 
+                        onClose={() => setIsMdl(false)} 
+                        onAdd={addTx} 
                     />
                 </div>
             );
         };
-
+        const RootApp = () => {
+            const [lng, setLng] = useState(() => localStorage.getItem('appLanguage') || 'es');
+            useEffect(() => {
+                localStorage.setItem('appLanguage', lng);
+            }, [lng]);
+            return (
+                <CtxLng.Provider value={{ lng, setLng }}>
+                    <MainApp />
+                </CtxLng.Provider>
+            );
+        };
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(<RootApp />);
     </script>
 </body>
 </html>
